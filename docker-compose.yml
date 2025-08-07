@@ -1,0 +1,154 @@
+networks:
+  marartti:
+    name: 'marartti_${APP_NAME}'
+services:
+  mcmv:
+    build: ./docker/server
+    container_name: mcmv
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    restart: always
+    ports:
+      - ${APP_PORT}
+      - ${APP_HTTPS_PORT}
+    environment:
+      - 'DATABASE_URL=mysql://${MARIADB_USER}:${MARIADB_PASSWORD}@db_server:3306/${MARIADB_DB}?serverVersion=${MARIADB_VERSION}'
+      - 'HOSTNAME=${APP_NAME}.hab.lan'
+    volumes:
+      - ./docker/server/ssl/marartti.crt:/etc/ssl/certs/marartti.crt
+      - ./docker/server/ssl/marartti.key:/etc/ssl/private/marartti.key
+      - ./app:/var/www/html
+      - ./docker/server/hosts/hosts:/etc/hosts
+      - ./docker/server/apache2/apache2.conf:/etc/apache2/apache2.conf
+      - ./docker/server/server_local/sites-available/:/etc/apache2/sites-available
+    networks:
+      - marartti
+  pgsql:
+    build: ./docker/postgresql
+    container_name: pgsql
+    ports:
+      - ${POSTGRESQL_PORT}
+    restart: always
+    environment:
+      POSTGRES_ROOT_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      TZ: ${TZ}
+    volumes:
+      - ./docker/postgresql/storage:/var/lib/postgresql/data
+    networks:
+      - marartti
+
+  mariasql:
+    container_name: mariasql
+    build: ./docker/mariasql
+    ports:
+      - ${MARIADB_PORT}
+    restart: always
+    environment:
+      MARIADB_ROOT_PASSWORD: ${MARIADB_ROOT_PASSWORD}
+      MARIADB_USER: ${MARIADB_USER}
+      MARIADB_PASSWORD: ${MARIADB_PASSWORD}
+      MARIADB_DATABASE: ${MARIADB_DB}
+      TZ: ${TZ}
+    volumes:
+      - ./docker/mariasql/storage:/var/lib/mysql
+      - ./docker/mariasql/initdb/:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=$$MARIADB_ROOT_PASSWORD
+      interval: 5s
+      retries: 5
+    networks:
+      - marartti
+
+  pgadmin:
+    container_name: pgadmin4
+    image: dpage/pgadmin4:latest
+    ports:
+      - ${PGADMIN_PORT}
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD}
+    volumes:
+      - ./docker/pgadmin/storage:/var/lib/pgadmin
+    networks:
+      - marartti
+
+  adminer:
+    container_name: adminer
+    image: adminer:latest
+    restart: always
+    ports:
+      - ${ADMINER_PORT}
+    networks:
+      - marartti
+
+  beaver:
+    container_name: beaver
+    image: dbeaver/cloudbeaver:latest
+    ports:
+      - ${BAVER_PORT}
+    restart: always
+    environment:
+      - CLOUDBEAVER_RESOURCE_QUOTA_DATA_EXPORT_FILE_SIZE_LIMIT=20000000
+      - CLOUDBEAVER_RESOURCE_QUOTA_RESOURCE_MANAGER_FILE_SIZE_LIMIT=500000
+      - CLOUDBEAVER_RESOURCE_QUOTA_SQL_MAX_RUNNING_QUERIES=100
+      - CLOUDBEAVER_RESOURCE_QUOTA_SQL_RESULT_SET_ROWS_LIMIT=100000
+      - CLOUDBEAVER_RESOURCE_QUOTA_SQL_TEXT_PREVIEW_MAX_LENGTH=4096
+      - CLOUDBEAVER_RESOURCE_QUOTA_SQL_BINARY_PREVIEW_MAX_LENGTH=261120
+    volumes:
+      - ./docker/beaver/storage/workspace:/opt/cloudbeaver/workspace
+      - ./docker/beaver/storage/cloudbeaver_certs:/opt/cloudbeaver/conf/certificates/
+      - ./docker/beaver/storage/trusted_cacerts:/opt/cloudbeaver/workspace/.data/custom/
+    networks:
+      - marartti
+
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: 'phpmyadmin'
+    restart: always
+    ports:
+      - ${PHPMYADMIN_PORT}
+      - ${PHPMYADMIN_HTTPS_PORT}
+    environment:
+      PMA_HOST: mariadb
+      UPLOAD_LIMIT: 512M
+      PMA_ARBITRARY: 1
+    networks:
+      - marartti
+
+  mongodb:
+    container_name: mongodb
+    image: mongo:latest
+    ports:
+      - ${MONGO_PORT}
+    restart: always
+    hostname: mongodb
+    volumes:
+      - ./docker/mongodb/initdb.d/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - ./docker/mongodb/storage:/data/db/
+      - ./docker/mongodb:/var/log/mongodb/
+    env_file:
+      - .env
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    networks:
+      - marartti
+  mongo-express:
+    container_name: mongo-express
+    image: mongo-express:latest
+    ports:
+      - ${MONGO_EXPRESS_PORT}
+    restart: always
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+      ME_CONFIG_MONGODB_PORT: 27017
+      ME_CONFIG_MONGODB_SERVER: 'mongodb'
+      ME_CONFIG_BASICAUTH_USERNAME: ${MONGO_EXPRESS_USERNAME}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${MONGO_EXPRESS_PASSWORD}
+    networks:
+      - marartti

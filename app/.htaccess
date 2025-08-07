@@ -1,0 +1,23 @@
+Options +FollowSymLinks
+IndexIgnore */*
+RewriteEngine On
+
+# Enable cross domain access control
+#SetEnvIf Origin "^http(s)?://(.+\.)?(mcmv\.itaborai.rj.gov.br|api.mcmv\.itaborai.rj.gov.br)$" REQUEST_ORIGIN=$0
+#Header always set Access-Control-Allow-Origin %{REQUEST_ORIGIN}e env=REQUEST_ORIGIN
+#Header always set Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS,"
+#Header always set Access-Control-Allow-Headers "x-test-header, Origin, X-Requested-With, Content-Type, Accept"
+
+AddDefaultCharset UTF-8
+ 
+RewriteCond %{REQUEST_URI} !^/(web)
+RewriteRule ^favicon.ico$ web/favicon.ico [L]
+RewriteRule ^assets/(.*)$ /web/assets/$1 [L]
+RewriteRule ^css/(.*)$ web/css/$1 [L]
+RewriteRule ^js/(.*)$ web/js/$1 [L]
+RewriteRule ^img/(.*)$ web/img/$1 [L]
+RewriteRule (.*) /web/$1
+ 
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /web/index.php

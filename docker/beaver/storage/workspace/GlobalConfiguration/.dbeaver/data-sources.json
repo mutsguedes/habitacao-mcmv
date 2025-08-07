@@ -1,0 +1,58 @@
+{
+	"folders": {},
+	"connections": {
+		"mariaDB-197558b8fe0-414afcb9781136eb": {
+			"provider": "mysql",
+			"driver": "mariaDB",
+			"name": "MariaDB@mariasql",
+			"save-password": true,
+			"configuration": {
+				"host": "mariasql",
+				"port": "3306",
+				"url": "jdbc:mariadb://mariasql:3306/",
+				"configurationType": "MANUAL",
+				"type": "dev",
+				"closeIdleConnection": true,
+				"auth-model": "native",
+				"bootstrap": {
+					"autocommit": true
+				}
+			}
+		},
+		"postgres-jdbc-197558dec65-ce2839f85436336": {
+			"provider": "postgresql",
+			"driver": "postgres-jdbc",
+			"name": "PostgreSQL@pgsql",
+			"save-password": true,
+			"configuration": {
+				"host": "pgsql",
+				"port": "5432",
+				"database": "marart",
+				"url": "jdbc:postgresql://pgsql:5432/marart",
+				"configurationType": "MANUAL",
+				"type": "dev",
+				"closeIdleConnection": true,
+				"auth-model": "native",
+				"bootstrap": {
+					"autocommit": true
+				}
+			}
+		}
+	},
+	"connection-types": {
+		"dev": {
+			"name": "Development",
+			"color": "255,255,255",
+			"description": "Regular development database",
+			"auto-commit": true,
+			"confirm-execute": false,
+			"confirm-data-change": false,
+			"smart-commit": false,
+			"smart-commit-recover": true,
+			"auto-close-transactions": true,
+			"close-transactions-period": 1800,
+			"auto-close-connections": true,
+			"close-connections-period": 14400
+		}
+	}
+}
